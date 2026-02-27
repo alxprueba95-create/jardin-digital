@@ -5,86 +5,61 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mi Jardín Digital</title>
     <style>
-        body { 
-            margin: 0; 
-            background: #111; 
-            overflow: hidden; 
-            touch-action: none; /* Optimiza para móviles */
-            font-family: sans-serif;
-        }
+        body { margin: 0; background: radial-gradient(circle, #1a1a2e 0%, #0f0f1a 100%); overflow: hidden; touch-action: none; }
         canvas { display: block; }
-        .instrucciones {
-            position: absolute;
-            top: 10px;
-            width: 100%;
-            text-align: center;
-            color: rgba(255,255,255,0.5);
-            pointer-events: none;
-        }
     </style>
 </head>
 <body>
-    <div class="instrucciones">Toca la pantalla para plantar flores</div>
     <canvas id="flowerCanvas"></canvas>
-
 <script>
     const canvas = document.getElementById('flowerCanvas');
     const ctx = canvas.getContext('2d');
-
-    function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    }
+    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
     window.addEventListener('resize', resize);
     resize();
 
     function drawFlower(x, y, petals, maxRadius, color) {
         let currentRadius = 0;
-        
         function animate() {
             if (currentRadius < maxRadius) {
                 ctx.save();
+                // Dibujar tallo
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.quadraticCurveTo(x + 20, y + 50, x, canvas.height);
+                ctx.strokeStyle = '#2d5a27';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                // Dibujar Flor
                 ctx.translate(x, y);
                 ctx.beginPath();
                 ctx.fillStyle = color;
-                
-                // Dibujamos la forma de la flor
                 for (let i = 0; i < petals * 60; i++) {
                     let angle = i * 0.1;
                     let r = currentRadius * Math.cos((petals / 2) * angle);
-                    let px = r * Math.cos(angle);
-                    let py = r * Math.sin(angle);
-                    ctx.lineTo(px, py);
+                    ctx.lineTo(r * Math.cos(angle), r * Math.sin(angle));
                 }
                 ctx.fill();
-
-                // Botón central de la flor
+                
+                // Centro
                 ctx.beginPath();
                 ctx.arc(0, 0, currentRadius * 0.2, 0, Math.PI * 2);
                 ctx.fillStyle = '#FFD700';
                 ctx.fill();
-                
                 ctx.restore();
                 
-                currentRadius += 1.5; // Velocidad de crecimiento
+                currentRadius += 2;
                 requestAnimationFrame(animate);
             }
         }
         animate();
     }
 
-    // Funciona en PC (clic) y Móvil (toque)
     canvas.addEventListener('pointerdown', (e) => {
-        const petals = Math.floor(Math.random() * 7) + 5;
-        const radius = Math.random() * 40 + 25;
         const hue = Math.random() * 360;
-        drawFlower(e.clientX, e.clientY, petals, radius, `hsl(${hue}, 80%, 60%)`);
+        drawFlower(e.clientX, e.clientY, Math.floor(Math.random() * 5) + 5, Math.random() * 30 + 30, `hsl(${hue}, 80%, 60%)`);
     });
-
-    // Flor inicial de bienvenida
-    setTimeout(() => {
-        drawFlower(canvas.width/2, canvas.height/2, 6, 70, '#ff69b4');
-    }, 300);
 </script>
 </body>
 </html>
