@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mi Jardín Digital Mejorado</title>
+    <title>Jardín de Santiago</title>
     <style>
         body { 
             margin: 0; 
@@ -21,6 +21,13 @@
     const canvas = document.getElementById('flowerCanvas');
     const ctx = canvas.getContext('2d');
 
+    let flowers = [];
+    let santiago = {
+        x: window.innerWidth / 2,
+        y: 100,
+        angle: 0
+    };
+
     function resize() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
@@ -28,70 +35,111 @@
     window.addEventListener('resize', resize);
     resize();
 
-    function drawFlower(x, y, petals, maxRadius, color) {
-        let currentRadius = 0;
-        const stemHeight = canvas.height - y;
-        const leafSide = Math.random() > 0.5 ? 1 : -1; // Lado de la hoja
+    class Flower {
+        constructor(x, y, petals, maxRadius, color) {
+            this.x = x;
+            this.y = y;
+            this.petals = petals;
+            this.maxRadius = maxRadius;
+            this.currentRadius = 0;
+            this.color = color;
+            this.angleOffset = Math.random() * 1000; // Para el movimiento individual
+            this.leafSide = Math.random() > 0.5 ? 1 : -1;
+        }
 
-        function animate() {
-            if (currentRadius < maxRadius) {
+        draw(time) {
+            // Efecto de viento (oscilación)
+            let wind = Math.sin(time / 1000 + this.angleOffset) * 10;
+            let growthFactor = this.currentRadius / this.maxRadius;
+
+            ctx.save();
+            
+            // 1. TALLO CON MOVIMIENTO
+            ctx.beginPath();
+            ctx.moveTo(this.x, canvas.height);
+            ctx.quadraticCurveTo(this.x + wind, (this.y + canvas.height) / 2, this.x + wind * 1.5, this.y);
+            ctx.strokeStyle = '#2d5a27';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            // 2. HOJA CON MOVIMIENTO
+            if (this.currentRadius > this.maxRadius / 2) {
                 ctx.save();
-                
-                // 1. DIBUJAR TALLO
+                ctx.translate(this.x + wind * 0.8, this.y + 40);
+                ctx.rotate(Math.sin(time / 800) * 0.2);
                 ctx.beginPath();
-                ctx.moveTo(x, canvas.height);
-                ctx.lineTo(x, y + (maxRadius - currentRadius)); 
-                ctx.strokeStyle = '#2d5a27';
-                ctx.lineWidth = 4;
-                ctx.stroke();
-
-                // 2. DIBUJAR HOJA (Cuando la flor crece a la mitad)
-                if (currentRadius > maxRadius / 2) {
-                    ctx.beginPath();
-                    ctx.fillStyle = '#3a7d32';
-                    ctx.ellipse(x + (15 * leafSide), y + 40, 20, 10, (leafSide * 45) * Math.PI/180, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-
-                // 3. DIBUJAR FLOR (Corregida para que no se corte)
-                ctx.translate(x, y);
-                ctx.beginPath();
-                ctx.fillStyle = color;
-                for (let i = 0; i <= petals * 60; i++) {
-                    let angle = i * 0.1;
-                    let r = currentRadius * Math.cos((petals / 2) * angle);
-                    let px = r * Math.cos(angle);
-                    let py = r * Math.sin(angle);
-                    if (i === 0) ctx.moveTo(px, py);
-                    else ctx.lineTo(px, py);
-                }
-                ctx.closePath(); // Esto evita que los pétalos salgan cortados
+                ctx.fillStyle = '#3a7d32';
+                ctx.ellipse(15 * this.leafSide, 0, 20, 10, (this.leafSide * 45) * Math.PI/180, 0, Math.PI * 2);
                 ctx.fill();
-
-                // 4. CENTRO DE LA FLOR
-                ctx.beginPath();
-                ctx.arc(0, 0, currentRadius * 0.2, 0, Math.PI * 2);
-                ctx.fillStyle = '#FFD700';
-                ctx.fill();
-                
                 ctx.restore();
-                
-                currentRadius += 1.5;
-                requestAnimationFrame(animate);
+            }
+
+            // 3. FLOR
+            ctx.translate(this.x + wind * 1.5, this.y);
+            ctx.rotate(Math.sin(time / 1200) * 0.1); // La flor cabecea un poco
+            ctx.beginPath();
+            ctx.fillStyle = this.color;
+            for (let i = 0; i <= this.petals * 60; i++) {
+                let angle = i * 0.1;
+                let r = this.currentRadius * Math.cos((this.petals / 2) * angle);
+                let px = r * Math.cos(angle);
+                let py = r * Math.sin(angle);
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.fill();
+
+            // 4. CENTRO
+            ctx.beginPath();
+            ctx.arc(0, 0, this.currentRadius * 0.2, 0, Math.PI * 2);
+            ctx.fillStyle = '#FFD700';
+            ctx.fill();
+            
+            ctx.restore();
+
+            if (this.currentRadius < this.maxRadius) {
+                this.currentRadius += 1.5;
             }
         }
-        animate();
+    }
+
+    function animate(time) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Mover y dibujar el nombre "Santiago"
+        santiago.angle += 0.02;
+        santiago.x = (canvas.width / 2) + Math.cos(santiago.angle) * 30;
+        santiago.y = 80 + Math.sin(santiago.angle * 0.5) * 20;
+
+        ctx.font = "bold 40px Arial";
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = "white";
+        ctx.fillStyle = "white";
+        ctx.textAlign = "center";
+        ctx.fillText("Santiago", santiago.x, santiago.y);
+        ctx.shadowBlur = 0; // Reset para las flores
+
+        // Dibujar todas las flores
+        flowers.forEach(flower => flower.draw(time));
+
+        requestAnimationFrame(animate);
     }
 
     canvas.addEventListener('pointerdown', (e) => {
         const petals = Math.floor(Math.random() * 5) + 5;
         const radius = Math.random() * 30 + 30;
         const hue = Math.random() * 360;
-        drawFlower(e.clientX, e.clientY, petals, radius, `hsl(${hue}, 80%, 60%)`);
+        flowers.push(new Flower(e.clientX, e.clientY, petals, radius, `hsl(${hue}, 80%, 60%)`));
     });
 
-    // Flor de bienvenida
-    setTimeout(() => drawFlower(canvas.width/2, canvas.height/3, 6, 60, '#ff69b4'), 500);
+    // Iniciar animación
+    requestAnimationFrame(animate);
+
+    // Flor inicial
+    setTimeout(() => {
+        flowers.push(new Flower(canvas.width/2, canvas.height/2, 6, 60, '#ff69b4'));
+    }, 300);
 </script>
 </body>
 </html>
